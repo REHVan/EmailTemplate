@@ -1,136 +1,125 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { useAuthContext } from '@/contexts/AuthContext'
 
-export default function EmailTemplates() {
+export default function EmailTemplatesPage() {
   const [formData, setFormData] = useState({
-    templateType: 'recruiter',
-    recipientName: '',
-    companyName: '',
-    position: '',
-    experience: '',
-    skills: '',
+    recipient: '',
+    purpose: '',
+    tone: 'professional',
+    length: 'medium',
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const { user } = useAuthContext()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement API call to ChatGPT
-    console.log('Form submitted:', formData)
-  }
+    setIsLoading(true)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    try {
+      const response = await fetch('/api/generate-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          userId: user?.uid,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate template')
+      }
+
+      const data = await response.json()
+      router.push(`/results?template=${encodeURIComponent(data.template)}`)
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Generate Email Templates</h1>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="templateType" className="block text-sm font-medium text-gray-700">
-            Template Type
-          </label>
-          <select
-            id="templateType"
-            name="templateType"
-            value={formData.templateType}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-          >
-            <option value="recruiter">Recruiter Job Application</option>
-            <option value="engineer">Software Engineer Referral Request</option>
-          </select>
-        </div>
+    <ProtectedRoute>
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Email Template Generator</h1>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="recipient" className="block text-sm font-medium text-gray-700">
+              Recipient
+            </label>
+            <input
+              type="text"
+              id="recipient"
+              value={formData.recipient}
+              onChange={(e) => setFormData({ ...formData, recipient: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+            />
+          </div>
 
-        <div>
-          <label htmlFor="recipientName" className="block text-sm font-medium text-gray-700">
-            Recipient Name
-          </label>
-          <input
-            type="text"
-            id="recipientName"
-            name="recipientName"
-            value={formData.recipientName}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            placeholder="John Doe"
-          />
-        </div>
+          <div>
+            <label htmlFor="purpose" className="block text-sm font-medium text-gray-700">
+              Purpose
+            </label>
+            <textarea
+              id="purpose"
+              value={formData.purpose}
+              onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+              rows={4}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+            />
+          </div>
 
-        <div>
-          <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-            Company Name
-          </label>
-          <input
-            type="text"
-            id="companyName"
-            name="companyName"
-            value={formData.companyName}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            placeholder="Tech Corp"
-          />
-        </div>
+          <div>
+            <label htmlFor="tone" className="block text-sm font-medium text-gray-700">
+              Tone
+            </label>
+            <select
+              id="tone"
+              value={formData.tone}
+              onChange={(e) => setFormData({ ...formData, tone: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option value="professional">Professional</option>
+              <option value="friendly">Friendly</option>
+              <option value="formal">Formal</option>
+              <option value="casual">Casual</option>
+            </select>
+          </div>
 
-        <div>
-          <label htmlFor="position" className="block text-sm font-medium text-gray-700">
-            Position
-          </label>
-          <input
-            type="text"
-            id="position"
-            name="position"
-            value={formData.position}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            placeholder="Senior Software Engineer"
-          />
-        </div>
+          <div>
+            <label htmlFor="length" className="block text-sm font-medium text-gray-700">
+              Length
+            </label>
+            <select
+              id="length"
+              value={formData.length}
+              onChange={(e) => setFormData({ ...formData, length: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            >
+              <option value="short">Short</option>
+              <option value="medium">Medium</option>
+              <option value="long">Long</option>
+            </select>
+          </div>
 
-        <div>
-          <label htmlFor="experience" className="block text-sm font-medium text-gray-700">
-            Experience (years)
-          </label>
-          <input
-            type="text"
-            id="experience"
-            name="experience"
-            value={formData.experience}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            placeholder="5"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="skills" className="block text-sm font-medium text-gray-700">
-            Key Skills
-          </label>
-          <textarea
-            id="skills"
-            name="skills"
-            value={formData.skills}
-            onChange={handleChange}
-            rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-            placeholder="React, Node.js, TypeScript, AWS"
-          />
-        </div>
-
-        <div>
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            disabled={isLoading}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            Generate Template
+            {isLoading ? 'Generating...' : 'Generate Template'}
           </button>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </ProtectedRoute>
   )
 } 
